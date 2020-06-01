@@ -53,6 +53,9 @@ int main(int argc, char *argv[])
                 printf("Message received from server: %s\n", buffer);
             }
         } while (len > 0);
+
+        printf("Connection closed.\n");
+        exit(0);
     });
     t.detach();
 

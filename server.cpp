@@ -6,6 +6,12 @@
 int main(int argc, char *argv[])
 {
     int code;
+    if (argc != 2)
+    {
+        printf("Usage: server.exe port\n");
+        return 0;
+    }
+
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
     {
@@ -22,7 +28,7 @@ int main(int argc, char *argv[])
         return code;
     }
 
-    int port = argc > 1 ? atoi(argv[1]) : 23333;
+    int port = atoi(argv[1]);
     sockaddr_in socket_addr;
     socket_addr.sin_family = AF_INET;
     socket_addr.sin_port = htons(port);
