@@ -6,7 +6,6 @@
 int main(int argc, char *argv[])
 {
     int code;
-
     WSADATA wsaData;
     if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
     {
@@ -23,9 +22,10 @@ int main(int argc, char *argv[])
         return code;
     }
 
+    int port = argc > 1 ? atoi(argv[1]) : 23333;
     sockaddr_in socket_addr;
     socket_addr.sin_family = AF_INET;
-    socket_addr.sin_port = htons(argc > 0 ? atoi(argv[0]) : 23333);
+    socket_addr.sin_port = htons(port);
     socket_addr.sin_addr.S_un.S_addr = INADDR_ANY;
 
     if (bind(server, reinterpret_cast<sockaddr *>(&socket_addr), sizeof(socket_addr)) == SOCKET_ERROR)
@@ -41,8 +41,8 @@ int main(int argc, char *argv[])
         printf("Failed to start listen, code: %d.\n", code);
         return code;
     }
-    
-    printf("Server started.");
+
+    printf("Server started listening at %d.\n", port);
 
     while (true)
     {
@@ -62,15 +62,21 @@ int main(int argc, char *argv[])
         printf("Client accepted: %s\n", inet_ntoa(client_addr.sin_addr));
         auto t = std::thread([client, client_addr]() {
             char buffer[1024];
-            auto echo = "Message received.";
-            int len = recv(client, buffer, 1023, 0);
-            if (len > 0)
+            int len;
+            do
             {
-                buffer[len] = 0;
-                printf("Message from client %s:\n%s", inet_ntoa(client_addr.sin_addr), buffer);
-                send(client, echo, static_cast<int>(strlen(echo)), 0);
-            }
+                len = recv(client, buffer, 1023, 0);
+                if (len > 0)
+                {
+                    buffer[len] = 0;
+                    printf("Message received from client %s: %s\n", inet_ntoa(client_addr.sin_addr), buffer);
+                    send(client, buffer, static_cast<int>(strlen(buffer)), 0);
+                }
+                if (strcmp(buffer, "bye") == 0)
+                    break;
+            } while (len > 0);
             closesocket(client);
+            printf("Connection closed: %s\n", inet_ntoa(client_addr.sin_addr));
         });
         t.detach();
     }
