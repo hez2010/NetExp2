@@ -20,7 +20,7 @@ int main(int argc, char *argv[])
         return code;
     }
 
-    auto server = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    auto server = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (server == INVALID_SOCKET)
     {
         code = WSAGetLastError();
@@ -41,51 +41,26 @@ int main(int argc, char *argv[])
         return code;
     }
 
-    if (listen(server, SOMAXCONN) == SOCKET_ERROR)
-    {
-        code = WSAGetLastError();
-        printf("Failed to start listen, code: %d.\n", code);
-        return code;
-    }
+    printf("Server started, port: %d.\n", port);
 
-    printf("Server started listening at %d.\n", port);
+    sockaddr_in from_addr;
+    int len = sizeof(from_addr);
+    int cnt = 0;
+    char buffer[1024];
 
     while (true)
     {
-        sockaddr_in client_addr;
-        int len = sizeof(client_addr);
-        auto client = accept(
-            server,
-            reinterpret_cast<sockaddr *>(&client_addr),
-            &len);
-        if (client == INVALID_SOCKET)
-        {
-            code = WSAGetLastError();
-            printf("Failed to accept client, code: %d.\n", code);
-            continue;
-        }
-
-        printf("Client accepted: %s\n", inet_ntoa(client_addr.sin_addr));
-        auto t = std::thread([client, client_addr]() {
-            char buffer[1024];
-            int len;
-            do
-            {
-                len = recv(client, buffer, 1023, 0);
-                if (len > 0)
-                {
-                    buffer[len] = 0;
-                    printf("Message received from client %s: %s\n", inet_ntoa(client_addr.sin_addr), buffer);
-                    send(client, buffer, static_cast<int>(strlen(buffer)), 0);
-                }
-                if (strcmp(buffer, "bye") == 0)
-                    break;
-            } while (len > 0);
-            closesocket(client);
-            printf("Connection closed: %s\n", inet_ntoa(client_addr.sin_addr));
-        });
-        t.detach();
+        int recv_len = recvfrom(server, buffer, 1023, 0, reinterpret_cast<sockaddr *>(&from_addr), &len);
+        if (recv_len <= 0)
+            break;
+        buffer[recv_len] = 0;
+        printf("[Count = %d] Received from client %s: %s\n", ++cnt, inet_ntoa(from_addr.sin_addr), buffer);
     }
+
+    closesocket(server);
+    WSACleanup();
+    
+    printf("Server closed.\n");
 
     return 0;
 }

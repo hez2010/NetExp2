@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
         return code;
     }
 
-    auto client = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    auto client = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (client == INVALID_SOCKET)
     {
         code = WSAGetLastError();
@@ -34,39 +34,20 @@ int main(int argc, char *argv[])
     socket_addr.sin_family = AF_INET;
     socket_addr.sin_port = htons(argc > 1 ? atoi(argv[2]) : 23333);
     socket_addr.sin_addr.S_un.S_addr = inet_addr(argv[1]);
-    if (connect(client, reinterpret_cast<sockaddr *>(&socket_addr), sizeof(socket_addr)) == SOCKET_ERROR)
+
+    int cnt = 0;
+    auto str = "Hello, this is a message %d from client.";
+    char buffer[1024];
+    int len = sizeof(socket_addr);
+    while (cnt++ < 100)
     {
-        code = WSAGetLastError();
-        printf("Failed to connect to server, code: %d.\n", code);
-        return code;
+        sprintf(buffer, str, cnt);
+        sendto(client, buffer, static_cast<int>(strlen(buffer)), 0, reinterpret_cast<sockaddr *>(&socket_addr), len);
+        printf("Sent %d message.\n", cnt);
     }
 
-    auto t = std::thread([client]() {
-        char buffer[1024];
-        int len;
-        do
-        {
-            len = recv(client, buffer, 1023, 0);
-            if (len > 0)
-            {
-                buffer[len] = 0;
-                printf("Message received from server: %s\n", buffer);
-            }
-        } while (len > 0);
-
-        printf("Connection closed.\n");
-        exit(0);
-    });
-    t.detach();
-
-    while (true)
-    {
-        std::string str;
-        std::getline(std::cin, str);
-        if (str.size() <= 0)
-            continue;
-        send(client, str.c_str(), static_cast<int>(str.size()), 0);
-    }
+    closesocket(client);
+    WSACleanup();
 
     return 0;
 }
