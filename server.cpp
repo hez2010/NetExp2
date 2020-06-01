@@ -3,7 +3,7 @@
 #include <cstdio>
 #include <thread>
 
-int main(int argc, char **argv)
+int main(int argc, char *argv[])
 {
     int code;
     auto server = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -16,7 +16,7 @@ int main(int argc, char **argv)
 
     sockaddr_in socket_addr;
     socket_addr.sin_family = AF_INET;
-    socket_addr.sin_port = htons(23333);
+    socket_addr.sin_port = htons(argc > 0 ? atoi(argv[0]) : 23333);
     socket_addr.sin_addr.S_un.S_addr = INADDR_ANY;
 
     if (bind(server, reinterpret_cast<sockaddr *>(&socket_addr), sizeof(socket_addr) == SOCKET_ERROR))
@@ -57,10 +57,12 @@ int main(int argc, char **argv)
             {
                 buffer[len] = 0;
                 printf("Message from client %s:\n%s", inet_ntoa(client_addr.sin_addr), buffer);
-                send(client, echo, strlen(echo), 0);
+                send(client, echo, static_cast<int>(strlen(echo)), 0);
             }
             closesocket(client);
         });
         t.detach();
     }
+
+    return 0;
 }
