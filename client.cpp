@@ -8,7 +8,7 @@
 int main(int argc, char *argv[])
 {
     int code;
-    if (argc != 3)
+    if (argc < 3)
     {
         printf("Usage: client.exe ip port\n");
         return 0;

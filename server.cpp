@@ -6,7 +6,7 @@
 int main(int argc, char *argv[])
 {
     int code;
-    if (argc != 2)
+    if (argc < 2)
     {
         printf("Usage: server.exe port\n");
         return 0;
