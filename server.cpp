@@ -6,11 +6,20 @@
 int main(int argc, char *argv[])
 {
     int code;
+
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0)
+    {
+        code = WSAGetLastError();
+        printf("Failed to initialize, code: %d.\n", code);
+        return code;
+    }
+
     auto server = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     if (server == INVALID_SOCKET)
     {
         code = WSAGetLastError();
-        printf("Failed to create socket.\n");
+        printf("Failed to create socket, code: %d.\n", code);
         return code;
     }
 
@@ -19,19 +28,21 @@ int main(int argc, char *argv[])
     socket_addr.sin_port = htons(argc > 0 ? atoi(argv[0]) : 23333);
     socket_addr.sin_addr.S_un.S_addr = INADDR_ANY;
 
-    if (bind(server, reinterpret_cast<sockaddr *>(&socket_addr), sizeof(socket_addr) == SOCKET_ERROR))
+    if (bind(server, reinterpret_cast<sockaddr *>(&socket_addr), sizeof(socket_addr)) == SOCKET_ERROR)
     {
         code = WSAGetLastError();
-        printf("Failed to bind socket.\n");
+        printf("Failed to bind socket, code: %d.\n", code);
         return code;
     }
 
     if (listen(server, SOMAXCONN) == SOCKET_ERROR)
     {
         code = WSAGetLastError();
-        printf("Failed to start listen.\n");
+        printf("Failed to start listen, code: %d.\n", code);
         return code;
     }
+    
+    printf("Server started.");
 
     while (true)
     {
